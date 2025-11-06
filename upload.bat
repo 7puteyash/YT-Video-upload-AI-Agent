@@ -1,13 +1,15 @@
 @echo off
 REM One-Click YouTube Upload with AI Agent
 REM This script automatically uploads the latest video in the folder
+REM Now with improved reliability for large files!
 
-title AI YouTube Uploader - One Click Upload
+title AI YouTube Uploader - Robust Upload
 color 0A
 
 echo.
 echo ============================================================
 echo    AI-POWERED YOUTUBE UPLOADER - ONE CLICK UPLOAD
+echo    (Enhanced with retry logic for large files)
 echo ============================================================
 echo.
 
@@ -42,18 +44,18 @@ if errorlevel 1 (
     pip install groq google-auth-oauthlib google-auth-httplib2 google-api-python-client python-dotenv opencv-python Pillow moviepy requests
 )
 
-REM Run the quick upload script
+REM Run the robust upload script
 echo.
-echo Starting upload process...
+echo Starting upload process with automatic retry logic...
 echo.
-python quick_upload.py
+python upload_robust.py
 
 if errorlevel 1 (
     echo.
-    echo ERROR: Upload failed!
+    echo Upload completed with errors!
     pause
 ) else (
     echo.
-    echo Upload completed!
+    echo Upload process finished!
     pause
 )

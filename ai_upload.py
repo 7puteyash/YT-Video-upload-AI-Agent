@@ -162,16 +162,45 @@ class AIYouTubeUploader:
                 }
             }
             
-            # Upload video
+            # Upload video with resumable upload for large files
             print("⬆️ Uploading video to YouTube...")
-            media = googleapiclient.http.MediaFileUpload(video_file)
+            print("⏳ This may take several minutes depending on file size and connection speed...")
+            
+            # Use resumable upload for better reliability with large files
+            media = googleapiclient.http.MediaFileUpload(
+                video_file,
+                chunksize=10 * 1024 * 1024,  # 10MB chunks
+                resumable=True,
+                mimetype='video/mp4'
+            )
+            
             request = youtube.videos().insert(
                 part="snippet,status",
                 body=video_metadata,
                 media_body=media
             )
             
-            response = request.execute()
+            # Execute with progress tracking
+            response = None
+            retry_count = 0
+            max_retries = 3
+            
+            while response is None:
+                try:
+                    status, response = request.next_chunk()
+                    if status:
+                        file_size = os.path.getsize(video_file)
+                        progress = int(status.progress() * 100)
+                        print(f"  ⏳ Upload progress: {progress}%", end='\r')
+                except Exception as e:
+                    retry_count += 1
+                    if retry_count <= max_retries:
+                        print(f"\n  ⚠️ Upload interrupted, retrying ({retry_count}/{max_retries})...")
+                        continue
+                    else:
+                        raise Exception(f"Upload failed after {max_retries} retries: {e}")
+            
+            print("\n✅ Video upload successful!")
             video_id = response["id"]
             
             print("✅ Video upload successful!")
@@ -201,7 +230,15 @@ class AIYouTubeUploader:
             }
             
         except Exception as e:
-            print(f"❌ Upload failed: {e}")
+            print(f"\n❌ Upload failed: {e}")
+            print("\n💡 Troubleshooting tips:")
+            print("  • Check your internet connection")
+            print("  • Ensure the video file is not corrupted")
+            print("  • Try again - the upload may be retryable")
+            print("  • If persistent, try a smaller video file first")
+            import traceback
+            print("\nDebug info:")
+            traceback.print_exc()
             return None
     
     def save_upload_report(self, video_file, video_id, ai_content):
